@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get install -y \
       mercurial build-essential python-setuptools libxml2-dev python-dev \
       libxslt1-dev zlib1g-dev libffi-dev libssl-dev python-ipaddr \
-      python-requests python-lxml python-pip && \
+      python-requests python-lxml python-pip python-yaml && \
     hg clone http://bitbucket.org/barnstorm/geni-lib && \
     cd geni-lib && \
     hg update -C 0.9-DEV && \
