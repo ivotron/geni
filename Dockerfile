@@ -19,3 +19,5 @@ RUN apt-get update && \
     apt-get autoremove -y --purge && \
     rm -fr /.cache/pip && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ADD cloudlab_util.py /usr/local/lib/python2.7/dist-packages/geni/
