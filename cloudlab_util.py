@@ -71,11 +71,13 @@ def get_slice(cloudlab_user, cloudlab_password,
 
 
 def do_request(ctxt, exp_name, sites, request, timeout):
+    # in case they were still up from previous execution
+    do_release(ctxt, experiment_name, sites)
 
-    manifests = []
+    manifests = {}
     for site in sites:
         print("Creating sliver on " + site)
-        manifests += [aggregate[site].createsliver(ctxt, exp_name, request)]
+        manifests[site] = aggregate[site].createsliver(ctxt, exp_name, request)
 
     print("Waiting for resources to come up online")
     timeout = time.time() + 60 * timeout
@@ -99,6 +101,8 @@ def do_request(ctxt, exp_name, sites, request, timeout):
         if time.time() > timeout:
             do_release(ctxt, sites, exp_name)
             raise Exception("Not all nodes came up after 15 minutes")
+
+    return manifests
 
 
 def do_release(ctxt, exp_name, sites):
@@ -130,10 +134,7 @@ def request(experiment_name=None, sites=None, timeout=15, expiration=240,
                      experiment_name, expiration,
                      create_if_not_exists=True)
 
-    # in case they were still up from previous execution
-    do_release(ctxt, experiment_name, sites)
-
-    do_request(ctxt, experiment_name, sites, request, timeout)
+    return do_request(ctxt, experiment_name, sites, request, timeout)
 
 
 def release(experiment_name=None, cloudlab_user=None, cloudlab_password=None,
@@ -142,4 +143,4 @@ def release(experiment_name=None, cloudlab_user=None, cloudlab_password=None,
 
     get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
               cloudlab_cert_path, cloudlab_key_path,
-              experiment_name, 10, create_if_not_exists=False)
+              experiment_name, 2, create_if_not_exists=False)
