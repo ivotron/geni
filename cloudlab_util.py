@@ -72,7 +72,7 @@ def get_slice(cloudlab_user, cloudlab_password,
 
 def do_request(ctxt, exp_name, sites, request, timeout):
     # in case they were still up from previous execution
-    do_release(ctxt, experiment_name, sites)
+    do_release(ctxt, exp_name, sites)
 
     manifests = {}
     for site in sites:
