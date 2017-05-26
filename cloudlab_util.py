@@ -77,7 +77,13 @@ def do_request(ctxt, exp_name, sites, request, timeout):
     manifests = {}
     for site in sites:
         print("Creating sliver on " + site)
-        manifests[site] = aggregate[site].createsliver(ctxt, exp_name, request)
+
+        if isinstance(request, dict):
+            r = request[site]
+        else:
+            r = request
+
+        manifests[site] = aggregate[site].createsliver(ctxt, exp_name, r)
 
     print("Waiting for resources to come up online")
     timeout = time.time() + 60 * timeout
@@ -143,4 +149,4 @@ def release(experiment_name=None, cloudlab_user=None, cloudlab_password=None,
 
     get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
               cloudlab_cert_path, cloudlab_key_path,
-              experiment_name, 2, create_if_not_exists=False)
+              experiment_name, 10, create_if_not_exists=False)
