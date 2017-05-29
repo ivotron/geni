@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from geni.aggregate import cloudlab as cl
+from geni.aggregate import protogeni as pg
 from geni.aggregate.apis import DeleteSliverError
 from geni.aggregate.frameworks import ClearinghouseError
 from geni.minigcf.config import HTTP
@@ -14,11 +15,13 @@ import time
 HTTP.TIMEOUT = 300
 
 aggregate = {
-    'utah': cl.Utah,
-    'wisconsin': cl.Wisconsin,
-    'clemson': cl.Clemson,
-    'utahddc': cl.UtahDDC,
-    'apt': cl.Apt
+    'apt': cl.Apt,
+    'cl-clemson': cl.Clemson,
+    'cl-utah': cl.Utah,
+    'cl-wisconsin': cl.Wisconsin,
+    'ig-utahddc': cl.UtahDDC,
+    'pg-kentucky': pg.Kentucky_PG,
+    'pg-utah': pg.UTAH_PG,
 }
 
 
@@ -31,8 +34,8 @@ def check_var(argument, varname):
 
 def get_slice(cloudlab_user, cloudlab_password,
               cloudlab_project, cloudlab_cert_path,
-              cloudlab_key_path, experiment_name, expiration,
-              create_if_not_exists=False):
+              cloudlab_key_path, experiment_name, expiration=120,
+              create_if_not_exists=False, renew_slice=False):
 
     cloudlab_user = check_var(cloudlab_user, 'CLOUDLAB_USER')
     cloudlab_password = check_var(cloudlab_password, 'CLOUDLAB_PASSWORD')
@@ -61,51 +64,58 @@ def get_slice(cloudlab_user, cloudlab_password,
     exp = datetime.datetime.now() + datetime.timedelta(minutes=expiration)
 
     if slice_id in c.cf.listSlices(c):
-        c.cf.renewSlice(c, experiment_name, exp=exp)
-    elif slice_id not in c.cf.listSlices(c) and create_if_not_exists:
-        c.cf.createSlice(c, experiment_name, exp=exp)
+        if renew_slice:
+            c.cf.renewSlice(c, experiment_name, exp=exp)
     else:
-        return None
+        if create_if_not_exists:
+            c.cf.createSlice(c, experiment_name, exp=exp)
+        else:
+            return None
 
     return c
 
 
-def do_request(ctxt, exp_name, sites, request, timeout):
-    # in case they were still up from previous execution
-    do_release(ctxt, exp_name, sites)
+def do_request(ctxt, exp_name, requests, timeout, ignore_failed_slivers):
 
     manifests = {}
-    for site in sites:
+    for site, request in requests.iteritems():
         print("Creating sliver on " + site)
 
-        if isinstance(request, dict):
-            r = request[site]
-        else:
-            r = request
-
-        manifests[site] = aggregate[site].createsliver(ctxt, exp_name, r)
+        try:
+            manifests[site] = aggregate[site].createsliver(ctxt, exp_name,
+                                                           request)
+        except ClearinghouseError:
+            # sometimes slice creating takes a bit, so we wait for 30 secs
+            time.sleep(30)
+            manifests[site] = aggregate[site].createsliver(ctxt, exp_name,
+                                                           request)
 
     print("Waiting for resources to come up online")
+    sites = set(requests.keys())
+    ready = set()
     timeout = time.time() + 60 * timeout
     while True:
-        time.sleep(30)
-        all_up = []
-        for site in sites:
+        time.sleep(60)
+        for site in sites - ready:
             try:
                 status = aggregate[site].sliverstatus(ctxt, exp_name)
             except:
                 break
 
-            if status['pg_status'] != 'ready':
-                break
-            all_up += [site]
+            if status['pg_status'] == 'ready':
+                ready.add(site)
 
-        if sites == all_up:
+        if sites == ready:
             # all good!
             break
 
         if time.time() > timeout:
-            do_release(ctxt, sites, exp_name)
+            if ignore_failed_slivers:
+                break
+
+            for site in sites - ready:
+                do_release(ctxt, exp_name, [site])
+                del manifests[site]
             raise Exception("Not all nodes came up after 15 minutes")
 
     return manifests
@@ -114,39 +124,65 @@ def do_request(ctxt, exp_name, sites, request, timeout):
 def do_release(ctxt, exp_name, sites):
     for site in sites:
         try:
+            print('Deleting sliver on ' + site + ".")
             aggregate[site].deletesliver(ctxt, exp_name)
         except ClearinghouseError:
-            time.sleep(30)
+            print('Got ClearinghouseError... attempting to delete again.')
+            time.sleep(10)
             try:
                 aggregate[site].deletesliver(ctxt, exp_name)
             except DeleteSliverError:
+                print('Got DeleteSilverError... skipping site.')
                 continue
         except DeleteSliverError:
+            print('Got DeleteSilverError... skipping site.')
             continue
         except:
             raise
 
+    print('Finished releasing resources on all sites')
 
-def request(experiment_name=None, sites=None, timeout=15, expiration=240,
-            request=None, cloudlab_user=None, cloudlab_password=None,
+
+def request(experiment_name=None, requests=None, timeout=15, expiration=120,
+            cloudlab_user=None, cloudlab_password=None,
             cloudlab_project=None, cloudlab_cert_path=None,
-            cloudlab_key_path=None):
+            cloudlab_key_path=None, ignore_failed_slivers=True):
 
-    if not experiment_name or not sites or not request:
-        raise Exception("Expecting 'sites', 'name' and 'request' args")
+    if not experiment_name or not requests:
+        raise Exception("Expecting 'experiment_name' and 'requests' args")
 
     ctxt = get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
                      cloudlab_cert_path, cloudlab_key_path,
                      experiment_name, expiration,
-                     create_if_not_exists=True)
+                     create_if_not_exists=True, renew_slice=True)
 
-    return do_request(ctxt, experiment_name, sites, request, timeout)
+    return do_request(ctxt, experiment_name, requests,
+                      timeout, ignore_failed_slivers)
 
 
-def release(experiment_name=None, cloudlab_user=None, cloudlab_password=None,
-            cloudlab_project=None, cloudlab_cert_path=None,
-            cloudlab_key_path=None):
+def print_slivers(experiment_name, cloudlab_user=None,
+                  cloudlab_password=None, cloudlab_project=None,
+                  cloudlab_cert_path=None, cloudlab_key_path=None):
+    print('Checking if slice for experiment exists')
+    ctxt = get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
+                     cloudlab_cert_path, cloudlab_key_path,
+                     experiment_name)
+    if ctxt is None:
+        print("We couldn't find a slice for {}.".format(experiment_name))
+    else:
+        for site in aggregate.keys():
+            status = aggregate[site].sliverstatus(ctxt, experiment_name)
+            print(json.dumps(status, indent=2))
 
-    get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
-              cloudlab_cert_path, cloudlab_key_path,
-              experiment_name, 10, create_if_not_exists=False)
+
+def release(experiment_name=None, cloudlab_user=None,
+            cloudlab_password=None, cloudlab_project=None,
+            cloudlab_cert_path=None, cloudlab_key_path=None):
+
+    ctxt = get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
+                     cloudlab_cert_path, cloudlab_key_path,
+                     experiment_name)
+    if ctxt is not None:
+        do_release(ctxt, experiment_name, aggregate.keys())
+    else:
+        print('No slice for experiment, all done.')
