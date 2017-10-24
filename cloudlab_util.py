@@ -55,6 +55,7 @@ def get_slice(cloudlab_user, cloudlab_password,
         }
         json.dump(data, f)
 
+    print("Loading GENI context")
     c = loadContext("/tmp/context.json", key_passphrase=cloudlab_password)
 
     slice_id = (
@@ -63,6 +64,7 @@ def get_slice(cloudlab_user, cloudlab_password,
 
     exp = datetime.datetime.now() + datetime.timedelta(minutes=expiration)
 
+    print("Available slices: {}".format(c.cf.listSlices(c).keys()))
     if slice_id in c.cf.listSlices(c):
         if renew_slice:
             c.cf.renewSlice(c, experiment_name, exp=exp)
@@ -72,6 +74,7 @@ def get_slice(cloudlab_user, cloudlab_password,
         else:
             return None
 
+    print("Found slice {}".format(slice_id))
     return c
 
 
@@ -89,6 +92,16 @@ def do_request(ctxt, exp_name, requests, timeout, ignore_failed_slivers):
             time.sleep(30)
             manifests[site] = aggregate[site].createsliver(ctxt, exp_name,
                                                            request)
+        except Exception as e:
+            print("Failed trying to create sliver on {}.".format(site))
+            print(e)
+            if ignore_failed_slivers:
+                print("Deleting sliver and continuing with others")
+                try:
+                    aggregate[site].deletesliver(ctxt, exp_name)
+                except DeleteSliverError as delerror:
+                    print('Got DeleteSilverError... skipping site.')
+                    print(delerror)
 
     print("Waiting for resources to come up online")
     sites = set(requests.keys())
