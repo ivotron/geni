@@ -61,8 +61,9 @@ The example above instantiates an experiment (named `myexp`)
 consisting of 1 node on both `utah` and `clemson` sites. By default, 
 if `cloudlab_*` arguments are not given, the script tries to read this 
 information from the environment (from variables `CLOUDLAB_USER`, 
-`CLOUDLAB_PASSWORD`, etc.). This helps to avoid storing credentials in 
-a script and can be given as part of the docker invocation instead:
+`CLOUDLAB_PASSWORD`, etc.). All these need to be in lower case. 
+This helps to avoid storing credentials in a script and can be given
+as part of the docker invocation instead:
 
 ```bash
 docker run --rm \
