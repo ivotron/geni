@@ -66,15 +66,17 @@ def get_slice(cloudlab_user, cloudlab_password,
 
     print("Available slices: {}".format(c.cf.listSlices(c).keys()))
     if slice_id in c.cf.listSlices(c):
+        print("Using existing slice {}".format(slice_id))
         if renew_slice:
+            print("Renewing slice for {} more minutes".format(expiration))
             c.cf.renewSlice(c, experiment_name, exp=exp)
     else:
         if create_if_not_exists:
+            print("Creating slice {} ({} minutes)".format(slice_id, expiration))
             c.cf.createSlice(c, experiment_name, exp=exp)
         else:
             return None
 
-    print("Found slice {}".format(slice_id))
     return c
 
 
@@ -112,7 +114,7 @@ def do_request(ctxt, exp_name, requests, timeout, ignore_failed_slivers):
         for site in sites - ready:
             try:
                 status = aggregate[site].sliverstatus(ctxt, exp_name)
-            except:
+            except Exception:
                 break
 
             if status['pg_status'] == 'ready':
@@ -139,18 +141,18 @@ def do_release(ctxt, exp_name, sites):
         try:
             print('Deleting sliver on ' + site + ".")
             aggregate[site].deletesliver(ctxt, exp_name)
-        except ClearinghouseError:
-            print('Got ClearinghouseError... attempting to delete again.')
+        except ClearinghouseError as e:
+            print('Got ClearinghouseError: "{}". Retrying.'.format(e))
             time.sleep(10)
             try:
                 aggregate[site].deletesliver(ctxt, exp_name)
-            except DeleteSliverError:
-                print('Got DeleteSilverError... skipping site.')
+            except DeleteSliverError as err:
+                print('Got DeleteSilverError: "{}". Skipping site.'.format(err))
                 continue
-        except DeleteSliverError:
-            print('Got DeleteSilverError... skipping site.')
+        except DeleteSliverError as e:
+            print('Got DeleteSilverError: "{}". Skipping site.'.format(e))
             continue
-        except:
+        except Exception:
             raise
 
     print('Finished releasing resources on all sites')
@@ -184,7 +186,12 @@ def print_slivers(experiment_name, cloudlab_user=None,
         print("We couldn't find a slice for {}.".format(experiment_name))
     else:
         for site in aggregate.keys():
-            status = aggregate[site].sliverstatus(ctxt, experiment_name)
+            try:
+                status = aggregate[site].sliverstatus(ctxt, experiment_name)
+            except Exception as e:
+                print("#####################")
+                print("{}: {}\n. Skipping.".format(site, e))
+                print("#####################")
             print(json.dumps(status, indent=2))
 
 
@@ -199,3 +206,12 @@ def release(experiment_name=None, cloudlab_user=None,
         do_release(ctxt, experiment_name, aggregate.keys())
     else:
         print('No slice for experiment, all done.')
+
+
+def renew(experiment_name=None, cloudlab_user=None, expiration=120,
+          cloudlab_password=None, cloudlab_project=None,
+          cloudlab_cert_path=None, cloudlab_key_path=None):
+    get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
+              cloudlab_cert_path, cloudlab_key_path,
+              experiment_name, expiration,
+              create_if_not_exists=False, renew_slice=True)
