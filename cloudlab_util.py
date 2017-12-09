@@ -75,6 +75,7 @@ def get_slice(cloudlab_user, cloudlab_password,
             print("Creating slice {} ({} minutes)".format(slice_id, expiration))
             c.cf.createSlice(c, experiment_name, exp=exp)
         else:
+            print("We couldn't find a slice for {}.".format(experiment_name))
             return None
 
     return c
@@ -183,16 +184,16 @@ def print_slivers(experiment_name, cloudlab_user=None,
                      cloudlab_cert_path, cloudlab_key_path,
                      experiment_name)
     if ctxt is None:
-        print("We couldn't find a slice for {}.".format(experiment_name))
-    else:
-        for site in aggregate.keys():
-            try:
-                status = aggregate[site].sliverstatus(ctxt, experiment_name)
-            except Exception as e:
-                print("#####################")
-                print("{}: {}\n. Skipping.".format(site, e))
-                print("#####################")
-            print(json.dumps(status, indent=2))
+        return
+
+    for site in aggregate.keys():
+        try:
+            status = aggregate[site].sliverstatus(ctxt, experiment_name)
+        except Exception as e:
+            print("#####################")
+            print("{}: {}\n. Skipping.".format(site, e))
+            print("#####################")
+        print(json.dumps(status, indent=2))
 
 
 def release(experiment_name=None, cloudlab_user=None,
@@ -211,7 +212,20 @@ def release(experiment_name=None, cloudlab_user=None,
 def renew(experiment_name=None, cloudlab_user=None, expiration=120,
           cloudlab_password=None, cloudlab_project=None,
           cloudlab_cert_path=None, cloudlab_key_path=None):
-    get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
-              cloudlab_cert_path, cloudlab_key_path,
-              experiment_name, expiration,
-              create_if_not_exists=False, renew_slice=True)
+    ctxt = get_slice(cloudlab_user, cloudlab_password, cloudlab_project,
+                     cloudlab_cert_path, cloudlab_key_path,
+                     experiment_name, expiration,
+                     create_if_not_exists=False, renew_slice=True)
+
+    if ctxt is None:
+        return
+
+    exp = datetime.datetime.now() + datetime.timedelta(minutes=expiration)
+
+    for site in aggregate.keys():
+        try:
+            aggregate[site].renewsliver(ctxt, experiment_name, exp)
+        except Exception as e:
+            print("#####################")
+            print("{}: {}\n. Skipping.".format(site, e))
+            print("#####################")
