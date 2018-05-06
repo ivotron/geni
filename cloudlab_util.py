@@ -6,15 +6,17 @@ from geni.aggregate.apis import DeleteSliverError
 from geni.aggregate.frameworks import ClearinghouseError
 from geni.minigcf.config import HTTP
 from geni.util import loadContext
+from geni.rspec import pg as rspec
 
 import datetime
 import json
 import os
 import time
+import sys
 
-HTTP.TIMEOUT = 300
+HTTP.TIMEOUT = 600
 
-aggregate = {
+agg = {
     'apt': cl.Apt,
     'cl-clemson': cl.Clemson,
     'cl-utah': cl.Utah,
@@ -72,7 +74,8 @@ def get_slice(cloudlab_user, cloudlab_password,
             c.cf.renewSlice(c, experiment_name, exp=exp)
     else:
         if create_if_not_exists:
-            print("Creating slice {} ({} minutes)".format(slice_id, expiration))
+            print("Creating slice {} ({} minutes)".format(slice_id,
+                                                          expiration))
             c.cf.createSlice(c, experiment_name, exp=exp)
         else:
             print("We couldn't find a slice for {}.".format(experiment_name))
@@ -81,27 +84,62 @@ def get_slice(cloudlab_user, cloudlab_password,
     return c
 
 
-def do_request(ctxt, exp_name, requests, timeout, ignore_failed_slivers):
+def filter_unavailable_hwtypes(ctxt, requests):
+    """Removes nodes of particular hwtypes if they're not available.
+    """
+    available_hwtypes = set()
+
+    for site in requests:
+        print("querying site: " + site)
+        ad = agg[site].listresources(ctxt, available=True)
+
+        for node in ad.nodes:
+            if not node.available:
+                continue
+            available_hwtypes.update(node.hardware_types.keys())
+
+    filtered_requests = {}
+    for site in requests:
+        print("Checking requests for site: " + site)
+        for r in requests[site].resources:
+            print("Checking if node type " + r.hardware_type + " is available")
+            if r.hardware_type in available_hwtypes:
+                print("  It is available!")
+                if site not in filtered_requests:
+                    filtered_requests[site] = rspec.Request()
+                filtered_requests[site].addResource(r)
+            else:
+                print("  It is NOT available :-(")
+
+    return filtered_requests
+
+
+def do_request(ctxt, exp_name, requests, timeout,
+               ignore_failed_slivers, skip_unavailable_hwtypes=True):
 
     manifests = {}
+
+    if skip_unavailable_hwtypes:
+        print("Will query for available hardware types and filter requests.")
+        requests = filter_unavailable_hwtypes(ctxt, requests)
+
     for site, request in requests.iteritems():
+
         print("Creating sliver on " + site)
 
         try:
-            manifests[site] = aggregate[site].createsliver(ctxt, exp_name,
-                                                           request)
+            manifests[site] = agg[site].createsliver(ctxt, exp_name, request)
         except ClearinghouseError:
             # sometimes slice creating takes a bit, so we wait for 30 secs
             time.sleep(30)
-            manifests[site] = aggregate[site].createsliver(ctxt, exp_name,
-                                                           request)
+            manifests[site] = agg[site].createsliver(ctxt, exp_name, request)
         except Exception as e:
             print("Failed trying to create sliver on {}.".format(site))
             print(e)
             if ignore_failed_slivers:
-                print("Deleting sliver and continuing with others")
+                print("Will ignore and keep going")
                 try:
-                    aggregate[site].deletesliver(ctxt, exp_name)
+                    agg[site].deletesliver(ctxt, exp_name)
                 except DeleteSliverError as delerror:
                     print('Got DeleteSilverError... skipping site.')
                     print(delerror)
@@ -114,7 +152,7 @@ def do_request(ctxt, exp_name, requests, timeout, ignore_failed_slivers):
         time.sleep(60)
         for site in sites - ready:
             try:
-                status = aggregate[site].sliverstatus(ctxt, exp_name)
+                status = agg[site].sliverstatus(ctxt, exp_name)
             except Exception:
                 break
 
@@ -141,14 +179,14 @@ def do_release(ctxt, exp_name, sites):
     for site in sites:
         try:
             print('Deleting sliver on ' + site + ".")
-            aggregate[site].deletesliver(ctxt, exp_name)
+            agg[site].deletesliver(ctxt, exp_name)
         except ClearinghouseError as e:
             print('Got ClearinghouseError: "{}". Retrying.'.format(e))
             time.sleep(10)
             try:
-                aggregate[site].deletesliver(ctxt, exp_name)
+                agg[site].deletesliver(ctxt, exp_name)
             except DeleteSliverError as err:
-                print('Got DeleteSilverError: "{}". Skipping site.'.format(err))
+                print('Got DeleteSilverError: "{}". Skipping.'.format(err))
                 continue
         except DeleteSliverError as e:
             print('Got DeleteSilverError: "{}". Skipping site.'.format(e))
@@ -186,9 +224,9 @@ def print_slivers(experiment_name, cloudlab_user=None,
     if ctxt is None:
         return
 
-    for site in aggregate.keys():
+    for site in agg.keys():
         try:
-            status = aggregate[site].sliverstatus(ctxt, experiment_name)
+            status = agg[site].sliverstatus(ctxt, experiment_name)
         except Exception as e:
             print("#####################")
             print("{}: {}\n. Skipping.".format(site, e))
@@ -204,7 +242,7 @@ def release(experiment_name=None, cloudlab_user=None,
                      cloudlab_cert_path, cloudlab_key_path,
                      experiment_name)
     if ctxt is not None:
-        do_release(ctxt, experiment_name, aggregate.keys())
+        do_release(ctxt, experiment_name, agg.keys())
     else:
         print('No slice for experiment, all done.')
 
@@ -222,10 +260,12 @@ def renew(experiment_name=None, cloudlab_user=None, expiration=120,
 
     exp = datetime.datetime.now() + datetime.timedelta(minutes=expiration)
 
-    for site in aggregate.keys():
+    for site in agg.keys():
         try:
-            aggregate[site].renewsliver(ctxt, experiment_name, exp)
+            agg[site].renewsliver(ctxt, experiment_name, exp)
+            status = agg[site].sliverstatus(ctxt, experiment_name)
         except Exception as e:
             print("#####################")
             print("{}: {}\n. Skipping.".format(site, e))
             print("#####################")
+        print(json.dumps(status, indent=2))
