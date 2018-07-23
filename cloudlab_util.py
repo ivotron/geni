@@ -12,7 +12,6 @@ import datetime
 import json
 import os
 import time
-import sys
 
 HTTP.TIMEOUT = 600
 
@@ -123,6 +122,8 @@ def do_request(ctxt, exp_name, requests, timeout,
         print("Will query for available hardware types and filter requests.")
         requests = filter_unavailable_hwtypes(ctxt, requests)
 
+    failed = set()
+
     for site, request in requests.iteritems():
 
         print("Creating sliver on " + site)
@@ -138,6 +139,7 @@ def do_request(ctxt, exp_name, requests, timeout,
             print(e)
             if ignore_failed_slivers:
                 print("Will ignore and keep going")
+                failed.add(site)
                 try:
                     agg[site].deletesliver(ctxt, exp_name)
                 except DeleteSliverError as delerror:
@@ -145,7 +147,7 @@ def do_request(ctxt, exp_name, requests, timeout,
                     print(delerror)
 
     print("Waiting for resources to come up online")
-    sites = set(requests.keys())
+    sites = set(requests.keys()) - failed
     ready = set()
     timeout = time.time() + 60 * timeout
     while True:
