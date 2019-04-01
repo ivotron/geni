@@ -1,0 +1,15 @@
+#!/bin/bash
+source common.sh
+
+docker run --rm --name=geni-lib \
+  -e CLOUDLAB_USER=$CLOUDLAB_USER \
+  -e CLOUDLAB_PASSWORD=$CLOUDLAB_PASSWORD \
+  -e CLOUDLAB_PROJECT=$CLOUDLAB_PROJECT \
+  -e CLOUDLAB_PUBKEY_PATH=$CLOUDLAB_PUBKEY_PATH \
+  -e CLOUDLAB_CERT_PATH=$CLOUDLAB_CERT_PATH \
+  -v $CLOUDLAB_PUBKEY_PATH:$CLOUDLAB_PUBKEY_PATH \
+  -v $CLOUDLAB_CERT_PATH:$CLOUDLAB_CERT_PATH \
+  -v `pwd`/geni/:/output \
+  -v `pwd`/scripts:/scripts \
+  --entrypoint=python \
+  ivotron/geni-lib:v0.9.7.8 -u /scripts/release.py
