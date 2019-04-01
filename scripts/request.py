@@ -62,4 +62,4 @@ with open('/output/machines', 'w') as f:
             f.write(' ansible_become=true' + os.linesep)
 
         with open('/output/{}.xml'.format(site), 'w') as mf:
-mf.write(manifest.text)
+            mf.write(manifest.text)

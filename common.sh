@@ -39,15 +39,3 @@ if [ -z $CLOUDLAB_CERT_PATH ]; then
   echo "Found! Configuring everything for you"
   export CLOUDLAB_CERT_PATH=`pwd`/geni/cloudlab.pem
 fi
-
-docker run --rm --name=geni-lib \
-  -e CLOUDLAB_USER=$CLOUDLAB_USER \
-  -e CLOUDLAB_PASSWORD=$CLOUDLAB_PASSWORD \
-  -e CLOUDLAB_PROJECT=$CLOUDLAB_PROJECT \
-  -e CLOUDLAB_PUBKEY_PATH=$CLOUDLAB_PUBKEY_PATH \
-  -e CLOUDLAB_CERT_PATH=$CLOUDLAB_CERT_PATH \
-  -v $CLOUDLAB_PUBKEY_PATH:$CLOUDLAB_PUBKEY_PATH \
-  -v $CLOUDLAB_CERT_PATH:$CLOUDLAB_CERT_PATH \
-  -v `pwd`/geni/:/output \
-  --entrypoint=python \
-  ivotron/geni-lib:v0.9.7.8 -u /output/request.py
