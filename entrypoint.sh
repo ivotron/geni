@@ -8,7 +8,7 @@ function check_variable {
   fi
 }
 
-check_variable "$GENI_USER"
+check_variable "$GENI_USERNAME"
 check_variable "$GENI_PASSWORD"
 check_variable "$GENI_PROJECT"
 check_variable "$GENI_PUBKEY_DATA"

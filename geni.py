@@ -149,7 +149,7 @@ def do_renew(ctxt):
     print(json.dumps(status, indent=2))
 
 
-geni_user = get_var('GENI_USER')
+geni_user = get_var('GENI_USERNAME')
 geni_password = get_var('GENI_PASSWORD')
 geni_project = get_var('GENI_PROJECT')
 geni_cert_path = get_var('GENI_CERT_PATH')

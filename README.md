@@ -10,15 +10,15 @@ as [CloudLab](https://cloudlab.us).
 There is only one action defined, which expects a Python script that 
 creates a valid request for infrastructure deployment on a GENI site. 
 Two variables, `request` and `aggregate`, should be defined by the 
-script. These are used by one of the following commands:
+script. These are used by the following commands:
 
-  * `request`. Create a slice on `aggregate` and allocate resources 
+  * `request`. Creates a slice on `aggregate` and allocates resources 
     specified in `request`. If the slice already exists, any sliver 
     for `GENI_EXPERIMENT` on the given `aggregate` is deleted. In 
     addition, if the slice exists, the `renew` command gets executed 
     first.
 
-  * `release`. Release resources for `GENI_EXPERIMENT` on `aggregate`. 
+  * `release`. Releases resources for `GENI_EXPERIMENT` on `aggregate`. 
     The sliver for the experiment on the specified aggregate is 
     deleted.
 
@@ -41,13 +41,13 @@ action "request" {
   uses = "popperized/geni@master"
   args = "config.py"
   env = {
-    GENI_EXPERIMENT = "myexp"
+    GENI_PROJECT = "myproject",
+    GENI_EXPERIMENT = "myexp",
     GENI_EXPIRATION = "120",
   }
   secrets = [
     "GENI_USER",
     "GENI_PASSWORD",
-    "GENI_PROJECT",
     "GENI_PUBKEY_DATA",
     "GENI_CERT_DATA"
   ]
@@ -62,7 +62,7 @@ from geni.rspec import pg
 
 node = pg.RawPC("node")
 
-node.disk_image = "urn:publicid:IDN+apt.emulab.net+image+schedock-PG0:docker-ubuntu16:0"
+node.disk_image = "urn:publicid:IDN+clemson.cloudlab.us+image+schedock-PG0:ubuntu18-docker"
 node.hardware_type = 'c6320'
 
 request = pg.Request()
@@ -75,6 +75,26 @@ The above requests a bare-metal node of type `c6320` on CloudLab's
 Clemson site. More examples available 
 [here](https://bitbucket.org/barnstorm/geni-lib/src/1b480c83581207300f73679af6844d327794d45e/samples/?at=0.9-DEV).
 
+### Environment
+
+  * `GENI_PROJECT`. **Required** The name of the project.
+  * `GENI_EXPERIMENT` **Required** Name of the experiment.
+  * `GENI_EXPIRATION` **Optional** Number of minutes after which the 
+    reservation will expire. Defaults to `120`.
+
 ### Secrets
 
-  * `GENI_USER` **Required** Name of user for the 
+  * `GENI_USERNAME` **Required** Name of user, e.g. for 
+    <https://geni.net>, <https://cloudlab.us>, etc.
+  * `GENI_PASSWORD` **Required** Password for user.
+  * `GENI_PUBKEY_DATA`. **Required** A base64-encoded string 
+    containing the public SSH key for the user authenticating with the 
+    site. Example encoding from a terminal: `cat $HOME/.ssh/mykey.pub 
+    | base64`.
+  * `GENI_CERT_DATA` **Required**. A base64-encoded string containing 
+    the certificate issued by the GENI member site. Guides for 
+    obtaining credentials are available for 
+    [`geni.net`](https://geni-lib.rtfd.io/en/latest/intro/creds/portal.html) 
+    and 
+    [`cloudlab.us`](https://geni-lib.rtfd.io/en/latest/intro/creds/cloudlab.html). 
+    Example encoding from a terminal: `cat cloudlab.pem | base64`.
