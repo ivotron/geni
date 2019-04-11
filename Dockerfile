@@ -1,4 +1,4 @@
-FROM python:3.7-alpine3.8
+FROM python:3.7-slim-stretch
 
 RUN pip install --no-cache-dir geni-lib
 
