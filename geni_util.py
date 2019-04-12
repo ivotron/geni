@@ -86,8 +86,6 @@ def do_request(ctxt, timeout=15, ignore_failed_slivers=True,
                 print('Got DeleteSilverError... skipping site.')
                 print(delerror)
 
-    return manifest
-
     print("Waiting for resources to come up online")
     timeout = time.time() + 60 * timeout
     while True:
