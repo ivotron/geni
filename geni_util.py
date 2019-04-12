@@ -44,6 +44,7 @@ def get_slice(create_if_not_exists=False, renew_slice=False):
     exp = datetime.datetime.now() + datetime.timedelta(minutes=expiration)
 
     print("Available slices: {}".format(c.cf.listSlices(c).keys()))
+
     if slice_id in c.cf.listSlices(c):
         print("Using existing slice {}".format(slice_id))
         if renew_slice:
@@ -65,6 +66,8 @@ def do_request(ctxt, timeout=15, ignore_failed_slivers=True,
                skip_unavailable_hwtypes=True):
 
     print("Creating sliver")
+
+    manifest = None
 
     try:
         manifest = aggregate.createsliver(ctxt, experiment_name, request)
@@ -155,7 +158,7 @@ geni_project = get_var('GENI_PROJECT')
 geni_cert_path = get_var('GENI_CERT_PATH')
 geni_key_path = get_var('GENI_PUBKEY_PATH')
 experiment_name = get_var('GENI_EXPERIMENT')
-expiration = get_var('GENI_EXPIRATION')
+expiration = int(os.environ.get('GENI_EXPIRATION', 120))
 request = None
 aggregate = None
 
@@ -173,17 +176,29 @@ if __name__ == '__main__':
         print("'aggregate' variable not defined in {}".format(cfg))
         sys.exit(1)
 
+    print('Aggregate: {}'.format(aggregate.name))
+    print('Request:\n{}'.format(request.toXMLString(pretty_print=True)))
+
     if cmd == 'request':
+
         ctxt = get_slice(create_if_not_exists=True, renew_slice=True)
         manifest = do_request(ctxt)
 
+        if not manifest:
+            print("Got an empty manifest")
+            sys.exit(1)
+
         try:
-            str = serialize_manifest(manifest)
+            manifest_str = serialize_manifest(manifest)
         except NameError:
             print("No 'serialize_manifest' function defined, dumping to XML")
-            outfile_path = os.environ['GITHUB_WORKSPACE'] + '/geni.xml'
-            with open(outfile_path, 'w') as mf:
-                mf.write(manifest.text)
+            manifest_str = manifest.text
+
+        outfile_path = '{}/{}.xml'.format(
+            os.environ['GITHUB_WORKSPACE'], experiment_name)
+
+        with open(outfile_path, 'w') as mf:
+            mf.write(manifest_str)
 
     elif cmd == 'renew':
         ctxt = get_slice(create_if_not_exists=False, renew_slice=True)

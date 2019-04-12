@@ -32,14 +32,35 @@ documentation](https://geni-lib.rtfd.io).
 ### Example workflow file
 
 ```hcl
-workflow "Allocate resources on a GENI site" {
+workflow "Run experiment on a GENI site" {
   on = "push"
-  resolves = "request"
+  resolves = "teardown"
 }
 
-action "request" {
+action "allocate" {
   uses = "popperized/geni@master"
-  args = "config.py"
+  args = "request config.py"
+  env = {
+    GENI_PROJECT = "myproject",
+    GENI_EXPERIMENT = "myexp",
+    GENI_EXPIRATION = "120",
+  }
+  secrets = [
+    "GENI_USER",
+    "GENI_PASSWORD",
+    "GENI_PUBKEY_DATA",
+    "GENI_CERT_DATA"
+  ]
+}
+
+# ...
+# a bunch of actions that use allocated resources
+# ...
+
+action "teardown" {
+  needs = "allocate"
+  uses = "popperized/geni@master"
+  args = "release config.py"
   env = {
     GENI_PROJECT = "myproject",
     GENI_EXPERIMENT = "myexp",
@@ -71,8 +92,8 @@ request.addResource(node)
 aggregate = cloudlab.Clemson
 ```
 
-The above requests a bare-metal node of type `c6320` on CloudLab's 
-Clemson site. More examples available 
+The particular example above requests one bare-metal node of type 
+`c6320` on CloudLab's Clemson site. More examples available 
 [here](https://bitbucket.org/barnstorm/geni-lib/src/1b480c83581207300f73679af6844d327794d45e/samples/?at=0.9-DEV).
 
 ### Environment

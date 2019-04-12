@@ -1,8 +1,8 @@
-FROM python:2.7-slim-stretch
+FROM python:2.7-slim-jessie
 
 RUN pip install --no-cache-dir geni-lib
 
 COPY entrypoint.sh /usr/bin
-COPY geni.py /root/
+COPY geni_util.py /root/
 
 ENTRYPOINT ["entrypoint.sh"]

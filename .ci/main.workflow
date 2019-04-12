@@ -5,10 +5,10 @@ workflow "Allocate resources on a GENI site" {
 
 action "request" {
   uses = "./"
-  args = "./ci/config.py"
+  args = "request .ci/config.py"
   env = {
     GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "myexp"
+    GENI_EXPERIMENT = "popperized"
     GENI_EXPIRATION = "120",
   }
   secrets = [
@@ -22,11 +22,10 @@ action "request" {
 action "release" {
   needs = "request"
   uses = "./"
-  runs = "release"
-  args = "./ci/config.py"
+  args = "release .ci/config.py"
   env = {
     GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "myexp"
+    GENI_EXPERIMENT = "popperized"
   }
   secrets = [
     "GENI_USERNAME",
