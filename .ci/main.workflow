@@ -1,36 +1,33 @@
-workflow "Allocate resources on a GENI site" {
+workflow "Allocate and release resources on Cloudlab" {
   on = "push"
-  resolves = "release"
+  resolves = "teardown"
 }
 
-action "request" {
-  uses = "./"
-  args = "request .ci/config.py"
+workflow "Run experiment on Cloudlab" {
+  on = "push"
+  resolves = "teardown"
+}
+
+action "build context" {
+  uses = "popperized/geni/build-context@master"
   env = {
-    GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "popperized"
-    GENI_EXPIRATION = "120",
+    GENI_FRAMEWORK = "cloudlab"
   }
   secrets = [
-    "GENI_USERNAME",
+    "GENI_PROJECT",
+    "GENI_USER",
     "GENI_PASSWORD",
     "GENI_PUBKEY_DATA",
     "GENI_CERT_DATA"
   ]
 }
 
-action "release" {
-  needs = "request"
-  uses = "./"
-  args = "release .ci/config.py"
-  env = {
-    GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "popperized"
-  }
-  secrets = [
-    "GENI_USERNAME",
-    "GENI_PASSWORD",
-    "GENI_PUBKEY_DATA",
-    "GENI_CERT_DATA"
-  ]
+action "allocate resources" {
+  uses = "popperized/geni/exec@master"
+  args = "./ci/one-baremetal-node.py"
+}
+
+action "teardown" {
+  uses = "popperized/geni/exec@master"
+  args = "./ci/release.py"
 }
