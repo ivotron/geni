@@ -16,10 +16,10 @@ check_variable GENI_CERT_DATA
 check_variable GENI_FRAMEWORK
 
 echo "$GENI_CERT_DATA" | base64 --decode > /tmp/geni.cert
-echo "$GENI_PUBKEY_DATA" | base64 --decode > /tmp/pub.key
+echo "$GENI_PUBKEY_DATA" | base64 --decode > $HOME/.bssw/pub.key
 
 build-context \
   --type $GENI_FRAMEWORK \
   --cert /tmp/geni.cert \
-  --pubkey /tmp/pub.key \
+  --pubkey $HOME/.bssw/pub.key \
   --project $GENI_PROJECT
