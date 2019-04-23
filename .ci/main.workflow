@@ -20,11 +20,11 @@ action "build context" {
 action "allocate resources" {
   uses = "./exec"
   needs = "build context"
-  args = "./ci/one-baremetal-node.py"
+  args = ".ci/one-baremetal-node.py"
 }
 
 action "teardown" {
   uses = "./exec"
   needs = "allocate resources"
-  args = "./ci/release.py"
+  args = ".ci/release.py"
 }
