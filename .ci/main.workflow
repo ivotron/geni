@@ -3,8 +3,14 @@ workflow "Allocate and release resources on Cloudlab" {
   resolves = "teardown"
 }
 
+action "lint" {
+  uses = "actions/bin/shellcheck@master"
+  args = "./*/entrypoint.sh"
+}
+
 action "build context" {
   uses = "./build-context"
+  needs = "lint"
   env = {
     GENI_FRAMEWORK = "cloudlab"
   }
