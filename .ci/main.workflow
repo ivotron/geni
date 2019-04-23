@@ -9,13 +9,13 @@ workflow "Run experiment on Cloudlab" {
 }
 
 action "build context" {
-  uses = "popperized/geni/build-context@master"
+  uses = "./build-context"
   env = {
     GENI_FRAMEWORK = "cloudlab"
   }
   secrets = [
     "GENI_PROJECT",
-    "GENI_USER",
+    "GENI_USERNAME",
     "GENI_PASSWORD",
     "GENI_PUBKEY_DATA",
     "GENI_CERT_DATA"
@@ -23,11 +23,11 @@ action "build context" {
 }
 
 action "allocate resources" {
-  uses = "popperized/geni/exec@master"
+  uses = "./exec"
   args = "./ci/one-baremetal-node.py"
 }
 
 action "teardown" {
-  uses = "popperized/geni/exec@master"
+  uses = "./exec"
   args = "./ci/release.py"
 }

@@ -40,7 +40,7 @@ action "build context" {
   }
   secrets = [
     "GENI_PROJECT",
-    "GENI_USER",
+    "GENI_USERNAME",
     "GENI_PASSWORD",
     "GENI_PUBKEY_DATA",
     "GENI_CERT_DATA"
