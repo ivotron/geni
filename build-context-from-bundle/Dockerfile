@@ -6,4 +6,4 @@ ENV PYTHONUNBUFFERED=on
 
 COPY entrypoint.sh /
 
-ENTRYPOINT ["entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
