@@ -11,7 +11,6 @@ function check_variable {
 check_variable GENI_USERNAME
 check_variable GENI_PASSWORD
 check_variable GENI_PROJECT
-check_variable GENI_EXPERIMENT
 check_variable GENI_PUBKEY_DATA
 check_variable GENI_CERT_DATA
 check_variable GENI_FRAMEWORK
