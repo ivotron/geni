@@ -1,6 +1,6 @@
 from geni.aggregate import cloudlab
-from geni import utils
+from geni import util
 
 
-ctx = utils.loadContext()
-utils.deleteSliverExists(cloudlab.Clemson, ctx, 'popperized')
+ctx = util.loadContext()
+util.deleteSliverExists(cloudlab.Clemson, ctx, 'popperized')

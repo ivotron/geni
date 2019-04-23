@@ -1,6 +1,6 @@
 from geni.aggregate import cloudlab
 from geni.rspec import pg
-from geni import utils
+from geni import util
 
 # create request
 # {
@@ -14,10 +14,10 @@ request.addResource(node)
 # }
 
 # load context
-ctx = utils.loadContext()
+ctx = util.loadContext()
 
 # create slice
-utils.createSlice(ctx, 'popperized')
+util.createSlice(ctx, 'popperized')
 
 # create sliver on clemson
-utils.createSliver(ctx, cloudlab.Clemson, 'popperized', request)
+util.createSliver(ctx, cloudlab.Clemson, 'popperized', request)
