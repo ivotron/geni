@@ -5,7 +5,7 @@ workflow "Allocate and release resources on Cloudlab" {
 
 action "lint" {
   uses = "actions/bin/shellcheck@master"
-  args = "./*/entrypoint.sh"
+  args = "./*/*.sh"
 }
 
 action "build context" {
@@ -27,10 +27,12 @@ action "allocate resources" {
   uses = "./exec"
   needs = "build context"
   args = ".ci/one-baremetal-node.py"
+  secrets = ["GENI_KEY_PASSPHRASE"]
 }
 
 action "teardown" {
   uses = "./exec"
   needs = "allocate resources"
   args = ".ci/release.py"
+  secrets = ["GENI_KEY_PASSPHRASE"]
 }

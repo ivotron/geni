@@ -1,3 +1,5 @@
+import os
+
 from geni.aggregate import cloudlab
 from geni.rspec import pg
 from geni import util
@@ -14,7 +16,7 @@ request.addResource(node)
 # }
 
 # load context
-ctx = util.loadContext()
+ctx = util.loadContext(key_passphrase=os.environ['GENI_KEY_PASSPHRASE'])
 
 # create slice
 util.createSlice(ctx, 'popperized')
