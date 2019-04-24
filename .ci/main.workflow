@@ -1,17 +1,21 @@
-workflow "Allocate resources on a GENI site" {
+workflow "Allocate and release resources on Cloudlab" {
   on = "push"
-  resolves = "release"
+  resolves = "teardown"
 }
 
-action "request" {
-  uses = "./"
-  args = "request .ci/config.py"
+action "lint" {
+  uses = "actions/bin/shellcheck@master"
+  args = "./*/entrypoint.sh"
+}
+
+action "build context" {
+  uses = "./build-context"
+  needs = "lint"
   env = {
-    GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "popperized"
-    GENI_EXPIRATION = "120",
+    GENI_FRAMEWORK = "cloudlab"
   }
   secrets = [
+    "GENI_PROJECT",
     "GENI_USERNAME",
     "GENI_PASSWORD",
     "GENI_PUBKEY_DATA",
@@ -19,18 +23,16 @@ action "request" {
   ]
 }
 
-action "release" {
-  needs = "request"
-  uses = "./"
-  args = "release .ci/config.py"
-  env = {
-    GENI_PROJECT = "schedock",
-    GENI_EXPERIMENT = "popperized"
-  }
-  secrets = [
-    "GENI_USERNAME",
-    "GENI_PASSWORD",
-    "GENI_PUBKEY_DATA",
-    "GENI_CERT_DATA"
-  ]
+action "allocate resources" {
+  uses = "./exec"
+  needs = "build context"
+  args = ".ci/one-baremetal-node.py"
+  secrets = ["GENI_KEY_PASSPHRASE"]
+}
+
+action "teardown" {
+  uses = "./exec"
+  needs = "allocate resources"
+  args = ".ci/release.py"
+  secrets = ["GENI_KEY_PASSPHRASE"]
 }
