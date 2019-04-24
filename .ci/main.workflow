@@ -5,7 +5,7 @@ workflow "Allocate and release resources on Cloudlab" {
 
 action "lint" {
   uses = "actions/bin/shellcheck@master"
-  args = "./*/*.sh"
+  args = "./*/entrypoint.sh"
 }
 
 action "build context" {

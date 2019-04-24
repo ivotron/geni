@@ -23,5 +23,5 @@ echo "$GENI_PUBKEY_DATA" | base64 --decode > "$HOME/.bssw/geni/pub.key"
 build-context \
   --type "$GENI_FRAMEWORK" \
   --cert /tmp/geni.cert \
-  --pubkey "$HOME/.bssw/pub.key" \
+  --pubkey "$HOME/.bssw/geni/pub.key" \
   --project "$GENI_PROJECT"
