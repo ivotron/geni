@@ -612,24 +612,23 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
         ctx.cf.createSlice(ctx, slice, exp=exp)
 
 
-def createSliver(ctx, am, slice, request, timeout=15, cleanup=True):
+def createSliver(ctx, am, slice, request, timeout=15):
     """Creates a sliver on given aggregate, using the given request. Returns
     a manifest for the sliver. Waits 'timeout' minutes for the sliver to be in
-    'ready' state before returning. If timeout is reached, it tries to delete
-    the sliver before returning unless 'cleanup' is False.
+    'ready' state before returning. If timeout is reached and clenup is 'True',
+    it tries to delete the sliver before returning.
     """
 
     manifest = None
 
-    try:
-        manifest = am.createsliver(ctx, slice, request)
-    except Exception as e:
-        if not cleanup:
-            raise e
-        deleteSliverExists(am, ctx, slice)
+    manifest = am.createsliver(ctx, slice, request)
+
+    time.sleep(60)
 
     print("Waiting for resources to come up online")
+
     time_limit = time.time() + 60 * timeout
+
     while True:
         time.sleep(60)
 
@@ -639,8 +638,6 @@ def createSliver(ctx, am, slice, request, timeout=15, cleanup=True):
             break
 
         if time.time() > time_limit:
-            if cleanup:
-                deleteSliverExists(am, ctx, slice)
             raise Exception("Time limit ({} mins) reached!".format(timeout))
 
     return manifest
