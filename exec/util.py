@@ -579,13 +579,24 @@ def _buildContext (framework, cert_path, key_path, username, user_urn, pubkey_pa
   json.dump(cdata, open(path, "w+"))
 
 
+def sliceExists(ctx, slice):
+    """Queries the federation to see if the given slice exists
+    """
+    slice_id = (
+        "urn:publicid:IDN+emulab.net:{}+slice+{}"
+    ).format(ctx.project, slice)
+    if slice_id in ctx.cf.listSlices(ctx):
+        return True
+    return False
+
+
 def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
     """Creates slice. Optionally, if slice already exists, it renews its
     expiration time if 'renew_if_exists=True'.
     """
     slice_id = (
         "urn:publicid:IDN+emulab.net:{}+slice+{}"
-    ).format(ctx.project(), slice)
+    ).format(ctx.project, slice)
 
     exp = (
         datetime.datetime.now() + datetime.timedelta(minutes=expiration))
@@ -600,17 +611,6 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
     else:
         print("Creating slice {} ({} mins)".format(slice_id, expiration))
         ctx.cf.createSlice(ctx, slice, exp=expiration)
-
-
-def sliceExists(ctx, slice):
-    """Queries the federation to see if the given slice exists
-    """
-    slice_id = (
-        "urn:publicid:IDN+emulab.net:{}+slice+{}"
-    ).format(ctx.project(), slice)
-    if slice_id in ctx.cf.listSlices(ctx):
-        return True
-    return False
 
 
 def createSliver(ctx, am, slice, request, timeout=15, cleanup=True):
