@@ -26,8 +26,7 @@ action "build context" {
 
 See 
 [here](https://geni-lib.readthedocs.io/en/latest/intro/creds/portal.html) 
-for a guide on how to obtain credentials for the [GENI 
-Portal](https://portal.geni.net).
+for a guide on how to obtain credentials for the GENI Portal.
 
 ### Secrets
 

@@ -27,7 +27,7 @@ and [here](http://docs.cloudlab.us/geni-lib.html).
 > argument) for the public key provided to the action that builds the 
 > context. In those cases, the `GENI_KEY_PASSPHRASE` secret needs to 
 > be defined and passed to the `geni.util.loadContext()` function. See 
-> an example [here](.ci/teardown.py).
+> an example [here](../.ci/teardown.py).
 
 ### Example workflow
 
@@ -71,9 +71,9 @@ action "teardown" {
 }
 ```
 
-The scripts used above can be found [in this folder](.ci/) and work on 
-CloudLab. The value of `GENI_KEY_PASSPHRASE` in the case of CloudLab 
-is CloudLab's account password.
+The scripts used above can be found [in this folder](../.ci/) and work 
+on CloudLab. The value of `GENI_KEY_PASSPHRASE` in the case of 
+CloudLab is CloudLab's account password.
 
 ### Secrets
 

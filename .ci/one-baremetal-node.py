@@ -22,4 +22,6 @@ ctx = util.loadContext(key_passphrase=os.environ['GENI_KEY_PASSPHRASE'])
 util.createSlice(ctx, 'popperized')
 
 # create sliver on clemson
-util.createSliver(ctx, cloudlab.Clemson, 'popperized', request)
+manifest = util.createSliver(ctx, cloudlab.Clemson, 'popperized', request)
+
+print(manifest.text)
