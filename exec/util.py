@@ -598,8 +598,7 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
         "urn:publicid:IDN+emulab.net:{}+slice+{}"
     ).format(ctx.project, slice)
 
-    exp = (
-        datetime.datetime.now() + datetime.timedelta(minutes=expiration))
+    exp = (datetime.datetime.now() + datetime.timedelta(minutes=expiration))
 
     print("Available slices: {}".format(ctx.cf.listSlices(ctx).keys()))
 
@@ -610,7 +609,7 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
             ctx.cf.renewSlice(ctx, slice, exp=exp)
     else:
         print("Creating slice {} ({} mins)".format(slice_id, expiration))
-        ctx.cf.createSlice(ctx, slice, exp=expiration)
+        ctx.cf.createSlice(ctx, slice, exp=exp)
 
 
 def createSliver(ctx, am, slice, request, timeout=15, cleanup=True):
