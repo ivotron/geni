@@ -605,7 +605,7 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
     if slice_id in ctx.cf.listSlices(ctx):
         print("Slice {} exists".format(slice_id))
         if renew_if_exists:
-            print("Renewing slice for {} more mins".format(expiration))
+            print("Renewing slice for {} more minutes".format(expiration))
             ctx.cf.renewSlice(ctx, slice, exp=exp)
     else:
         print("Creating slice {} ({} mins)".format(slice_id, expiration))
@@ -621,11 +621,13 @@ def createSliver(ctx, am, slice, request, timeout=15):
 
     manifest = None
 
+    print("Creating sliver on {}".format(am.name))
+
     manifest = am.createsliver(ctx, slice, request)
 
     time.sleep(60)
 
-    print("Waiting for resources to come up online")
+    print("Waiting for sliver to come up online ({} mins max)".format(timeout))
 
     time_limit = time.time() + 60 * timeout
 
@@ -641,3 +643,48 @@ def createSliver(ctx, am, slice, request, timeout=15):
             raise Exception("Time limit ({} mins) reached!".format(timeout))
 
     return manifest
+
+
+def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts'):
+    """Creates an Ansible inventory file (in INI format) from a given manifest.
+    The output format is the following:
+
+      <name> ansible_host=<fqdn> ansible_user=<username> ansible_become=True
+      ...
+      ...
+
+      <groups>
+
+    where:
+
+      - name: name of the node.
+      - fqdn: fqdn of the node.
+      - username: the username as reported by node.logins[0].
+      - groups: the contents of the given groups dictionary. For example:
+
+          {
+            servers: ['s1', 's2'],
+            clients: ['c1', 'c2'],
+          }
+
+        will result in:
+
+          [servers]
+          s1
+          s2
+
+          [clients]
+          c1
+          c2
+    """
+    with open(hostsfile, 'w') as f:
+        for i, n in enumerate(manifest.nodes):
+            f.write(n.name)
+            f.write(' ansible_host={}'.format(n.hostfqdn))
+            f.write(' ansible_user={}'.format(n.logins[0].username))
+            f.write(' ansible_become=True\n')
+        f.write('\n')
+        for group, hosts in groups.items():
+            f.write('[{}]\n'.format(group))
+            f.write('\n'.join(hosts))
+            f.write('\n')
