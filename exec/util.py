@@ -645,7 +645,7 @@ def createSliver(ctx, am, slice, request, timeout=15):
     return manifest
 
 
-def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts'):
+def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts', append=False):
     """Creates an Ansible inventory file (in INI format) from a given manifest.
     The output format is the following:
 
@@ -677,7 +677,7 @@ def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts'):
           c1
           c2
     """
-    with open(hostsfile, 'w') as f:
+    with open(hostsfile, 'a' if append else 'w') as f:
         for i, n in enumerate(manifest.nodes):
             f.write(n.name)
             f.write(' ansible_host={}'.format(n.hostfqdn))
