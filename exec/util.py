@@ -645,9 +645,10 @@ def createSliver(ctx, am, slice, request, timeout=15):
     return manifest
 
 
-def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts', append=False):
-    """Creates an Ansible inventory file (in INI format) from a given manifest.
-    The output format is the following:
+def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts',
+                       format='ini', append=False):
+    """Creates an Ansible inventory file from a given manifest in the specified
+    format. For INI files, the output format is the following:
 
       <name> ansible_host=<fqdn> ansible_user=<username> ansible_become=True
       ...
@@ -667,7 +668,7 @@ def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts', append=False):
             clients: ['c1', 'c2'],
           }
 
-        will result in:
+        will result in the following for INI:
 
           [servers]
           s1
@@ -676,15 +677,49 @@ def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts', append=False):
           [clients]
           c1
           c2
+
+    When format==yaml, the inventory is an equivalent of the above but in YAML
+    format.
     """
+
+    hostsfile = hostsfile + ('.ini' if format == "ini" else ".yaml")
+
     with open(hostsfile, 'a' if append else 'w') as f:
+
+        if format == 'yaml':
+            f.write('hosts:\n  all:\n')
+
         for i, n in enumerate(manifest.nodes):
-            f.write(n.name)
-            f.write(' ansible_host={}'.format(n.hostfqdn))
-            f.write(' ansible_user={}'.format(n.logins[0].username))
-            f.write(' ansible_become=True\n')
+            if format == 'yaml':
+                f.write('    {}:\n'.format(n.name))
+                f.write('      {}: {}\n'.format('ansible_host', n.hostfqdn))
+                f.write('      {}: {}\n'.format('ansible_user',
+                                                n.logins[0].username))
+                f.write('      ansible_become: true\n')
+            else:
+                f.write(n.name)
+                f.write(' {}={}'.format('ansible_host', n.hostfqdn))
+                f.write(' {}={}'.format('ansible_user', n.logins[0].username))
+                f.write(' ansible_become=True\n')
         f.write('\n')
-        for group, hosts in groups.items():
-            f.write('[{}]\n'.format(group))
-            f.write('\n'.join(hosts))
-            f.write('\n')
+
+        if format == 'yaml':
+            for group, hosts in groups.items():
+                f.write('  children:\n    {}:\n      hosts:\n'.format(group))
+                for h in hosts:
+                    f.write('        {}:\n'.format(h))
+        else:
+            for group, hosts in groups.items():
+                f.write('[{}]\n'.format(group))
+                f.write('\n'.join(hosts))
+                f.write('\n')
+
+
+def xmlManifestToAnsibleInventory(manifest, groups={}, hostsfile='./hosts',
+                                  format='ini', append=False):
+
+    """Same as toAnsibleInventory but from an XML file
+    """
+    from .rspec.pgmanifest import Manifest as PGM
+
+    toAnsibleInventory(PGM(manifest), groups, hostsfile, format, append)
