@@ -590,7 +590,7 @@ def sliceExists(ctx, slice):
     return False
 
 
-def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
+def createSlice(ctx, slice, exp=120, renew_if_exists=False):
     """Creates slice. Optionally, if slice already exists, it renews its
     expiration time if 'renew_if_exists=True'.
     """
@@ -598,17 +598,17 @@ def createSlice(ctx, slice, expiration=120, renew_if_exists=False):
         "urn:publicid:IDN+emulab.net:{}+slice+{}"
     ).format(ctx.project, slice)
 
-    exp = (datetime.datetime.now() + datetime.timedelta(minutes=expiration))
+    exp = (datetime.datetime.now() + datetime.timedelta(minutes=exp))
 
     print("Available slices: {}".format(ctx.cf.listSlices(ctx).keys()))
 
     if slice_id in ctx.cf.listSlices(ctx):
         print("Slice {} exists".format(slice_id))
         if renew_if_exists:
-            print("Renewing slice for {} more minutes".format(expiration))
+            print("Renewing slice for {} more minutes".format(exp))
             ctx.cf.renewSlice(ctx, slice, exp=exp)
     else:
-        print("Creating slice {} ({} mins)".format(slice_id, expiration))
+        print("Creating slice {} ({} mins)".format(slice_id, exp))
         ctx.cf.createSlice(ctx, slice, exp=exp)
 
 
