@@ -701,11 +701,10 @@ def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts',
                 f.write(' {}={}'.format('ansible_host', n.hostfqdn))
                 f.write(' {}={}'.format('ansible_user', n.logins[0].username))
                 f.write(' ansible_become=True\n')
-        f.write('\n')
 
         if format == 'yaml':
+            f.write('  children:\n    {}:\n      hosts:\n'.format(group))
             for group, hosts in groups.items():
-                f.write('  children:\n    {}:\n      hosts:\n'.format(group))
                 for h in hosts:
                     f.write('        {}:\n'.format(h))
         else:
