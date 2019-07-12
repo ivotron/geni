@@ -687,7 +687,7 @@ def toAnsibleInventory(manifest, groups={}, hostsfile='./hosts',
     with open(hostsfile, 'a' if append else 'w') as f:
 
         if format == 'yaml':
-            f.write('hosts:\n  all:\n')
+            f.write('all:\n  hosts:\n')
 
         for i, n in enumerate(manifest.nodes):
             if format == 'yaml':
